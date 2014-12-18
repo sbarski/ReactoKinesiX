@@ -43,11 +43,11 @@ namespace ReactoKinesix.ExampleCs
     {
         static void Main()
         {
-            var awsKey = "AKIAJTGWYUCX6G7P2FOQ";
-            var awsSecret = "OPsw7QG6M7Q8zqh/scPcumvM/Tt0OjAYH+hGV6il";
-            var region = RegionEndpoint.USEast1;
+            var awsKey = "";
+            var awsSecret = "";
+            var region = RegionEndpoint.APSoutheast2;
             var appName = "YC-test";
-            var streamName = "YC-test";
+            var streamName = "TestStream";
             var workerId = "PHANTOM-cs";
 
             BasicConfigurator.Configure();
@@ -58,9 +58,11 @@ namespace ReactoKinesix.ExampleCs
 
             var factory = new MyProcessorFactory();
             var app = ReactoKinesixApp.CreateNew(awsKey, awsSecret, region, appName, streamName, workerId, factory);
-
             app.OnInitialized += (_, evtArgs) => Console.WriteLine("Client application started");
             app.OnBatchProcessed += (_, evtArgs) => Console.WriteLine("Another batch processed...");
+
+            app.PutRecord("adfasdf");
+            
 
             Console.WriteLine("Press any key to quit...");
             Console.ReadKey();

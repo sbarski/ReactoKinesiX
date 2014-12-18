@@ -330,6 +330,27 @@ module internal KinesisUtils =
                     return Failure(exn) 
         }
 
+    let putRecord  (kinesis: IAmazonKinesis)
+                   (config : ReactoKinesixConfig) 
+                   (payload: string)
+                   (StreamName streamName) =
+        async {
+            let req  = new PutRecordRequest(StreamName = streamName)
+            req.PartitionKey <- Guid.NewGuid.ToString()
+            req.Data <- new MemoryStream(Encoding.UTF8.GetBytes(payload))
+
+            let! putRecordResponse = Async.WithRetry(kinesis.PutRecordAsync(req) |> Async.AwaitTask, config.MaxKinesisRetries)
+            
+            match putRecordResponse with
+            | Success res ->
+                logDebug "Put records into stream [{0}], shard [{1}] with sequence number [{2}]" 
+                           [| streamName; res.ShardId; res.SequenceNumber |]
+                return Success(res)
+            | Failure exn ->
+                logError exn "Failed to put record into stream [{0}]" [| streamName |]
+                return Failure(exn)
+        }
+
 module internal DynamoDBUtils =
     let private shardIdAttr, lastHeartbeatAttr, workerIdAttr, checkpointAttr, isClosedAttr, handoverReqAttr = 
         "ShardId", "LastHeartbeat", "WorkerId", "SequenceNumberCheckpoint", "IsClosed", "HandoverRequest"

@@ -60,6 +60,9 @@ type IReactoKinesixApp =
     /// Change the processor that will be used to process received records
     abstract member ChangeProcessorFactory  : newFactory : IRecordProcessorFactory -> unit
 
+    // Allow a record to be put on to the stream
+    abstract member PutRecord               : payload : string -> unit
+
 type internal ProcessorFactory = ShardId -> IRecordProcessor
 
 type internal WorkingShard =
@@ -175,6 +178,8 @@ and ReactoKinesixApp private (kinesis           : IAmazonKinesis,
     //#endregion
 
     //#region Monitor sharding changes in the stream
+
+
 
     // look for changes to the stream compared to the shards we know about
     let checkStreamChanges =
@@ -351,6 +356,11 @@ and ReactoKinesixApp private (kinesis           : IAmazonKinesis,
 
             logDebug "Disposed" [||]
 
+    let putRecord (payload: string) = 
+        async {
+            KinesisUtils.putRecord kinesis config payload streamName |> ignore
+        }
+
     member internal this.Kinesis          = kinesis
     member internal this.DynamoDB         = dynamoDB
     member internal this.Config           = config
@@ -400,6 +410,7 @@ and ReactoKinesixApp private (kinesis           : IAmazonKinesis,
         member this.StartProcessing (shardId : string) = startShardProcessor (ShardId shardId) |> Async.StartAsPlainTask
         member this.StopProcessing  (shardId : string) = stopShardProcessor  (ShardId shardId) |> Async.StartAsPlainTask
         member this.ChangeProcessorFactory newFactory  = processorFactory <- newFactory
+        member this.PutRecord (payload: string) = putRecord (payload: string) |> Async.RunSynchronously
 
     interface IDisposable with
         member this.Dispose () = 
